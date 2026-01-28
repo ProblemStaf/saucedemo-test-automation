@@ -1,50 +1,41 @@
-name: SauceDemo Tests
+name: Запуск тестов и генерация Allure-отчёта
+on: [push]
 
-on: [push, pull_request]
+permissions:
+  contents: write # Необходимо для загрузки артефакта
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v3
-      with:
-        python-version: '3.10'
+      - name: Клонировать репозиторий
+        uses: actions/checkout@v4
 
-    
-    - name: Install dependencies
-      run: |
-        pip install -r requirements.txt
-        sudo apt-get update
-        sudo apt-get install -y allure
-    
-    - name: Run tests
-      run: |
-        pytest tests/test_login.py --alluredir=allure-results
-    
-    - name: Generate Allure report
-      if: always()
-      run: |
-        allure generate allure-results -o allure-report --clean
-    
-    - name: Upload Allure report
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: allure-report
-        path: allure-report
+      - name: Установить Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
-    - name: Установка Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'  # Убедитесь, что используется версия Java 8 или выше
+      - name: Установить зависимости проекта
+        run: pip install -r requirements.txt
 
-    - name: Установка Allure Commandline
-      run: npm install -g allure-commandline
+      - name: Запустить тесты и собрать результаты
+        run: pytest tests/ --alluredir=allure-results -v
 
-    - name: Генерация отчета Allure
-      run: allure generate allure-results -o allure-report --clean
+      - name: Установить Java для Allure
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Установить Allure Commandline
+        run: npm install -g allure-commandline
+
+      - name: Сгенерировать HTML-отчёт Allure
+        run: allure generate allure-results -o allure-report --clean
+
+      - name: Загрузить отчёт как артефакт
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: allure-report/
